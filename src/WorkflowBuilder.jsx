@@ -7,7 +7,6 @@ import ReactFlow, {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
-  removeElements,
 } from "react-flow-renderer";
 import {
   BarChart,
@@ -38,11 +37,13 @@ function WorkflowBuilder() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
+  const [editableLabel, setEditableLabel] = useState("");
 
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds));
 
   const handleNodeClick = (_, node) => {
     setSelectedNode(node);
+    setEditableLabel(node.data.label); 
     setDrawerOpen(true);
   };
 
@@ -61,7 +62,7 @@ function WorkflowBuilder() {
     const nodeType = event.dataTransfer.getData("application/reactflow");
 
     const newNode = {
-      id: `${new Date().getTime()}`,
+      id: `${new Date().getTime()}`,  
       type: nodeType,
       data: { label: nodeType },
       position: { x: event.clientX - 100, y: event.clientY - 50 },
@@ -84,6 +85,12 @@ function WorkflowBuilder() {
     setEdges((eds) =>
       eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
     );
+  };
+
+  const handleSaveLabel = () => {
+    // Update the label in the node data
+    updateNodeData("label", editableLabel);
+    setDrawerOpen(false);
   };
 
   return (
@@ -155,8 +162,8 @@ function WorkflowBuilder() {
               <h3>Edit Node</h3>
               <TextField
                 label="Label"
-                value={selectedNode.data.label}
-                onChange={(e) => updateNodeData("label", e.target.value)}
+                value={editableLabel}
+                onChange={(e) => setEditableLabel(e.target.value)} 
                 fullWidth
               />
               <TextField
@@ -181,11 +188,11 @@ function WorkflowBuilder() {
                 Delete Node
               </Button>
               <Button
-                onClick={() => setDrawerOpen(false)}
+                onClick={handleSaveLabel} 
                 style={{ marginTop: "16px" }}
                 variant="contained"
               >
-                Close
+                Save
               </Button>
             </div>
           )}
