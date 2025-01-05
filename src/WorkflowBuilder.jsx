@@ -43,7 +43,7 @@ function WorkflowBuilder() {
 
   const handleNodeClick = (_, node) => {
     setSelectedNode(node);
-    setEditableLabel(node.data.label); // Set label to editable value when selected
+    setEditableLabel(node.data.label); 
     setDrawerOpen(true);
   };
 
@@ -62,7 +62,7 @@ function WorkflowBuilder() {
     const nodeType = event.dataTransfer.getData("application/reactflow");
 
     const newNode = {
-      id: `${new Date().getTime()}`,  // Fixed the issue here
+      id: `${new Date().getTime()}`,  
       type: nodeType,
       data: { label: nodeType },
       position: { x: event.clientX - 100, y: event.clientY - 50 },
@@ -163,7 +163,7 @@ function WorkflowBuilder() {
               <TextField
                 label="Label"
                 value={editableLabel}
-                onChange={(e) => setEditableLabel(e.target.value)} // Update editable label
+                onChange={(e) => setEditableLabel(e.target.value)} 
                 fullWidth
               />
               <TextField
@@ -188,7 +188,7 @@ function WorkflowBuilder() {
                 Delete Node
               </Button>
               <Button
-                onClick={handleSaveLabel} // Save label and close the drawer
+                onClick={handleSaveLabel} 
                 style={{ marginTop: "16px" }}
                 variant="contained"
               >
