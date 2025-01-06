@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+ import React, { useState, useEffect } from "react";
 import ReactFlow, {
   addEdge,
   Background,
@@ -38,12 +38,46 @@ function WorkflowBuilder() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [editableLabel, setEditableLabel] = useState("");
+  const [isDirty, setIsDirty] = useState(false); // Track if there are unsaved changes
+
+  // Save the workflow to local storage
+  const saveWorkflow = () => {
+    localStorage.setItem("workflow", JSON.stringify({ nodes, edges }));
+    setIsDirty(false); // Reset the dirty flag once saved
+  };
+
+  // Load the workflow from local storage
+  const loadWorkflow = () => {
+    const savedWorkflow = localStorage.getItem("workflow");
+    if (savedWorkflow) {
+      const { nodes, edges } = JSON.parse(savedWorkflow);
+      setNodes(nodes);
+      setEdges(edges);
+    }
+  };
+
+  // Handle navigation away
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (isDirty) {
+        const message = "You have unsaved changes. Are you sure you want to leave?";
+        event.returnValue = message; // Standard for most browsers
+        return message; // For some browsers
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   const onConnect = (params) => setEdges((eds) => addEdge(params, eds));
 
   const handleNodeClick = (_, node) => {
     setSelectedNode(node);
-    setEditableLabel(node.data.label); 
+    setEditableLabel(node.data.label);
     setDrawerOpen(true);
   };
 
@@ -55,6 +89,7 @@ function WorkflowBuilder() {
           : node
       )
     );
+    setIsDirty(true); // Mark as unsaved when any change is made
   };
 
   const handleDrop = (event) => {
@@ -62,12 +97,13 @@ function WorkflowBuilder() {
     const nodeType = event.dataTransfer.getData("application/reactflow");
 
     const newNode = {
-      id: `${new Date().getTime()}`,  
+        id: `${new Date().getTime()}`, // Fixed this line for id generation
       type: nodeType,
       data: { label: nodeType },
       position: { x: event.clientX - 100, y: event.clientY - 50 },
     };
     setNodes((nds) => nds.concat(newNode));
+    setIsDirty(true); // Mark as unsaved
   };
 
   const handleDragStart = (event, nodeType) => {
@@ -78,6 +114,8 @@ function WorkflowBuilder() {
   const clearCanvas = () => {
     setNodes([]);
     setEdges([]);
+    setIsDirty(true);
+    localStorage.removeItem("workflow");
   };
 
   const deleteNode = (nodeId) => {
@@ -85,13 +123,19 @@ function WorkflowBuilder() {
     setEdges((eds) =>
       eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
     );
+    setIsDirty(true); // Mark as unsaved
   };
 
   const handleSaveLabel = () => {
-    // Update the label in the node data
     updateNodeData("label", editableLabel);
     setDrawerOpen(false);
+    saveWorkflow(); // Save the workflow when label is updated
   };
+
+  // Load the workflow when the component mounts
+  useEffect(() => {
+    loadWorkflow();
+  }, []);
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
@@ -129,6 +173,14 @@ function WorkflowBuilder() {
         >
           Clear Canvas
         </Button>
+        <Button
+          onClick={saveWorkflow}
+          variant="contained"
+          color="primary"
+          style={{ marginTop: "16px" }}
+        >
+          Save Workflow
+        </Button>
       </div>
 
       <ReactFlowProvider>
@@ -163,7 +215,7 @@ function WorkflowBuilder() {
               <TextField
                 label="Label"
                 value={editableLabel}
-                onChange={(e) => setEditableLabel(e.target.value)} 
+                onChange={(e) => setEditableLabel(e.target.value)}
                 fullWidth
               />
               <TextField
@@ -188,7 +240,7 @@ function WorkflowBuilder() {
                 Delete Node
               </Button>
               <Button
-                onClick={handleSaveLabel} 
+                onClick={handleSaveLabel}
                 style={{ marginTop: "16px" }}
                 variant="contained"
               >
