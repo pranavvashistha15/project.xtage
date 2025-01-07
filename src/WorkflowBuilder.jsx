@@ -165,18 +165,6 @@ function WorkflowBuilder() {
     loadWorkflow();
   }, []);
 
-  // Export workflow as JSON file
-  const exportWorkflow = () => {
-    const workflow = { nodes, edges };
-    const blob = new Blob([JSON.stringify(workflow, null, 2)], {
-      type: "application/json",
-    });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "workflow.json";
-    link.click();
-  };
-
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -190,6 +178,22 @@ function WorkflowBuilder() {
       reader.readAsText(file);
     }
   };
+  
+  const exportWorkflow = () => {
+    if (nodes.length === 0 || edges.length === 0) {
+      alert("Cannot export an empty workflow.");
+      return;
+    }
+    const workflow = { nodes, edges };
+    const blob = new Blob([JSON.stringify(workflow, null, 2)], {
+      type: "application/json",
+    });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "workflow.json";
+    link.click();
+  };
+  
 
   return (
     <div style={{ display: "flex", height: "100vh", padding: "16px" }}>
