@@ -8,19 +8,9 @@ import ReactFlow, {
   useEdgesState,
   useNodesState,
 } from "react-flow-renderer";
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-} from "recharts";
+
 import { Drawer, TextField, Button, Box, Input, Typography, Tooltip as MuiTooltip } from "@mui/material";
+import Analytics from "./components/Analytics";
 
 const initialNodes = [];
 const initialEdges = [];
@@ -38,14 +28,14 @@ function WorkflowBuilder() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [editableLabel, setEditableLabel] = useState("");
-  const [isDirty, setIsDirty] = useState(false); // Track if there are unsaved changes
 
-  // Undo/Redo states
+
+
   const [history, setHistory] = useState({ past: [], present: { nodes, edges }, future: [] });
 
   const saveWorkflow = () => {
     localStorage.setItem("workflow", JSON.stringify({ nodes, edges }));
-    setIsDirty(false); // Reset the dirty flag once saved
+   
   };
 
   const loadWorkflow = () => {
@@ -59,7 +49,7 @@ function WorkflowBuilder() {
 
   const onConnect = (params) => {
     setEdges((eds) => addEdge(params, eds));
-    setIsDirty(true);
+    
     addToHistory();
   };
 
@@ -77,7 +67,7 @@ function WorkflowBuilder() {
           : node
       )
     );
-    setIsDirty(true); // Mark as unsaved when any change is made
+    
     addToHistory();
   };
 
@@ -86,13 +76,13 @@ function WorkflowBuilder() {
     const nodeType = event.dataTransfer.getData("application/reactflow");
 
     const newNode = {
-      id: `${new Date().getTime()}`, // Fixed this line for id generation
+      id: `${new Date().getTime()}`,
       type: nodeType,
       data: { label: nodeType },
       position: { x: event.clientX - 100, y: event.clientY - 50 },
     };
     setNodes((nds) => nds.concat(newNode));
-    setIsDirty(true); // Mark as unsaved
+    
     addToHistory();
   };
 
@@ -104,7 +94,7 @@ function WorkflowBuilder() {
   const clearCanvas = () => {
     setNodes([]);
     setEdges([]);
-    setIsDirty(true);
+    
     localStorage.removeItem("workflow");
     addToHistory();
   };
@@ -114,22 +104,22 @@ function WorkflowBuilder() {
     setEdges((eds) =>
       eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId)
     );
-    setIsDirty(true); // Mark as unsaved
+   
     addToHistory();
   };
 
   const handleSaveLabel = () => {
     updateNodeData("label", editableLabel);
     setDrawerOpen(false);
-    saveWorkflow(); // Save the workflow when label is updated
+    saveWorkflow(); 
   };
 
   const addToHistory = () => {
     const { past, present, future } = history;
     setHistory({
-      past: [...past, present],  // Add current state to past for undo
-      present: { nodes, edges },  // Set the new state as present
-      future: [],  // Clear the future stack, since a new action invalidates redo history
+      past: [...past, present],  
+      present: { nodes, edges }, 
+      future: [],  
     });
   };
 
@@ -138,9 +128,9 @@ function WorkflowBuilder() {
     if (past.length > 0) {
       const previousState = past[past.length - 1];
       setHistory({
-        past: past.slice(0, past.length - 1), // Remove the last item from past
-        present: previousState, // Update the present state to the previous state
-        future: [present, ...history.future], // Add current state to future for redo
+        past: past.slice(0, past.length - 1), 
+        present: previousState, 
+        future: [present, ...history.future], 
       });
       setNodes(previousState.nodes);
       setEdges(previousState.edges);
@@ -152,9 +142,9 @@ function WorkflowBuilder() {
     if (future.length > 0) {
       const nextState = future[0];
       setHistory({
-        past: [...history.past, present], // Add current state to past for undo
-        present: nextState, // Update present to the next state in the future stack
-        future: future.slice(1), // Remove the first item from future
+        past: [...history.past, present], 
+        present: nextState, 
+        future: future.slice(1), 
       });
       setNodes(nextState.nodes);
       setEdges(nextState.edges);
@@ -173,12 +163,12 @@ function WorkflowBuilder() {
         const importedWorkflow = JSON.parse(reader.result);
         setNodes(importedWorkflow.nodes || []);
         setEdges(importedWorkflow.edges || []);
-        setIsDirty(false); // Reset dirty flag after import
+        
       };
       reader.readAsText(file);
     }
   };
-  
+
   const exportWorkflow = () => {
     if (nodes.length === 0 || edges.length === 0) {
       alert("Cannot export an empty workflow.");
@@ -193,7 +183,6 @@ function WorkflowBuilder() {
     link.download = "workflow.json";
     link.click();
   };
-  
 
   return (
     <div style={{ display: "flex", height: "100vh", padding: "16px" }}>
@@ -362,65 +351,7 @@ function WorkflowBuilder() {
         </Drawer>
       </ReactFlowProvider>
 
-      <div
-        style={{
-          flex: 1,
-          padding: "16px",
-          borderLeft: "1px solid #ddd",
-          backgroundColor: "#f9f9f9",
-          borderRadius: "8px",
-        }}
-      >
-        <Typography variant="h6" gutterBottom>Analytics</Typography>
-        <BarChart
-          width={300}
-          height={200}
-          data={nodes.map((node) => ({
-            name: node.data.label,
-            time: node.data.executionTime || 0,
-          }))}
-        >
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="time" fill="#8884d8" />
-        </BarChart>
-
-        <LineChart
-          width={300}
-          height={200}
-          data={nodes.map((node, index) => ({
-            name: node.data.label,
-            cumulative:
-              index === 0
-                ? 0
-                : (nodes[index - 1]?.data.executionTime || 0) +
-                  (node.data.executionTime || 0),
-          }))}
-        >
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="cumulative" stroke="#82ca9d" />
-        </LineChart>
-
-        <PieChart width={300} height={200}>
-          <Pie
-            data={nodes.map((node) => ({
-              name: node.data.label,
-              value: node.data.executionTime || 0,
-            }))}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={80}
-            fill="#8884d8"
-          />
-        </PieChart>
-      </div>
+      <Analytics nodes={nodes} />
     </div>
   );
 }
